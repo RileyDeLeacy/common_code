@@ -27,5 +27,34 @@ function splitn($text,$delimiter,$nth){
     }
     return implode("-",$tempArray);
 }
+/**
+ * prints an associatve array of unique values from $data which their mapped value
+ * as the number of occurances in $data
+ * @param Array $data input array
+ **/
+function pullColumnOccurances($data){
+    $occurances = Array();
+    for($i=0;$i<count($data);$i++){
+        if(isset($data[$i])){
+            if(!isset($occurances[trim($data[$i])])){
+                $occurances[trim($data[$i])]=1;
+            }else{
+                $occurances[trim($data[$i])]++;
+            }
+        }
+    }
+    print_r($occurances);
+}
+
+/**
+ * null safe check to determine if $input2 is within $margin% of $input1
+ * @param Double/Int $input1 number to be compared against
+ * @param Double/Int $input2 number to compare
+ * @param int $margin % accectable error
+ * @return Boolean returns true if $input2 is within $margin% of $input1 or true if both inputs are null
+ **/
+function withinMargin($input1,$input2,$margin) {
+    return $input1==null?$input2==null:$input1<=($input2*(1+$margin/100))&&$input1>=($input2*(1-$margin/100));
+}
 
 ?>
