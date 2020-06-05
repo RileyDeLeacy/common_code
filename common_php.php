@@ -20,13 +20,23 @@ function customZeroFill($value,$length){
  * @return String returns the input string up intil the $nth occurance of $delimiter
  **/
 function splitn($text,$delimiter,$nth){
+    if($text==null||$text==""){
+        return "";
+    }
+    if($delimiter==null||$delimiter==""){
+        return $text;
+    }
     $splitstring = explode($delimiter,$text);
     $tempArray=Array();
     for($i=0;$i<$nth;$i++){
+        if(!isset($splitstring[$i])){
+        break;
+        }
         array_push($tempArray,$splitstring[$i]);
     }
-    return implode("-",$tempArray);
+    return implode($delimiter,$tempArray);
 }
+
 /**
  * prints an associatve array of unique values from $data which their mapped value
  * as the number of occurances in $data
