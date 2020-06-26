@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html style="background-color: black;">
+<body>
+<script>
+    function dragElement(elmnt) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        if (document.getElementById(elmnt.id + "Header")) {
+            // if present, the header is where you move the DIV from:
+            document.getElementById(elmnt.id + "Header").onmousedown = dragMouseDown;
+        } else {
+            // otherwise, move the DIV from anywhere inside the DIV:
+            elmnt.onmousedown = dragMouseDown;
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            // call a function whenever the cursor moves:
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            // calculate the new cursor position:
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            // set the element's new position:
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            // stop moving when mouse button is released:
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+    }
+    function showDisplay(inputElement){
+        var target = document.getElementById(inputElement);
+        console.log(target);
+        target.style.display="block";
+        target.style.top="100px";
+        target.style.left=(window.innerWidth/2-(target.getBoundingClientRect()["width"]/2))+"px";
+        dragElement(target);
+        // popup.
+    }
+    function hideDisplay(){
+        document.getElementById("popup").style.display="none";
+    }
+</script>
+<style>
+    /*
+    Blue:#34B9EA
+    Grey:#E9E9E9
+    
+    */
+    *{
+        margin:0;
+    }
+    .popup{
+        border:1px solid #AFAFAF;
+        border-radius: 5px;
+        display:none;
+        width:400px;
+        position:absolute;
+        background-color: white;
+        /* padding:5px; */
+    }
+    .popupHeader{
+        border:1px solid #AFAFAF;
+        border-radius: 5px;
+        margin:5px;
+        padding:6px 16px 6px 16px;
+        background: #E9E9E9;
+        font-weight: bold;
+        font-family:Arial, Helvetica, sans-serif;
+    }
+    .popupHeader:hover{
+        cursor: move;
+    }
+    .closeButton{
+        float:right;
+        margin:5px 10px 5px 0px;
+        padding:5px 10px 5px 10px;
+    }
+    .popupContent{
+        padding:10px;
+    }
+</style>
+<div style="background-color: white; width:1000px; height:500px;">
+    <button onclick="showDisplay('popup')">Display</button>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis pulvinar dapibus nunc vitae tempor. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Mauris dictum neque tincidunt urna pulvinar bibendum. Sed accumsan viverra nunc, ut mattis odio aliquam ac. Aliquam sagittis neque nibh, sit amet pretium magna sodales vitae. Nunc porttitor diam nec est placerat laoreet. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nunc ex lectus, fringilla eget congue non, convallis vel lorem. Ut eu dapibus sem. Praesent vitae sagittis augue, ut eleifend odio.
+
+        Morbi sit amet ultrices arcu, quis scelerisque risus. Fusce tincidunt magna mi, eu sagittis leo venenatis sed. Aenean vitae lacus vitae nunc fermentum dictum. Aliquam eu magna sodales ex rhoncus maximus sit amet in neque. Duis sagittis augue quam, vel vulputate nibh maximus ac. Integer ullamcorper dapibus orci, vitae luctus nisl placerat at. Sed mattis aliquet velit eu vehicula. Aliquam faucibus fringilla pretium. In efficitur, tortor mattis elementum elementum, velit nibh consequat augue, in dignissim nisi purus ut lectus. Maecenas suscipit sagittis gravida. Nulla facilisi.
+        
+        Suspendisse quis dui hendrerit, cursus nibh ut, semper quam. Vestibulum vitae tristique diam, bibendum egestas justo. Integer nec elit vitae urna pellentesque faucibus. Suspendisse vehicula, neque in eleifend interdum, ex urna iaculis odio, a finibus erat felis vitae quam. Pellentesque cursus est vel sapien malesuada rutrum. Donec scelerisque, sapien sagittis aliquet dapibus, erat urna eleifend velit, a aliquet arcu augue et tortor. Vestibulum porta ex turpis, quis consequat elit semper eu. Cras pharetra est ac leo efficitur, varius faucibus ipsum porta. Curabitur est ligula, luctus sit amet ultricies at, ultricies ac justo. In imperdiet bibendum risus, non pulvinar sapien finibus vitae. Curabitur lacinia, neque vitae tempor commodo, eros nulla vulputate purus, sed sollicitudin quam mauris vitae est. Curabitur dignissim tellus ac neque consequat, in pellentesque ipsum tempus. Etiam fringilla vestibulum risus in lobortis. Morbi viverra aliquam erat id pulvinar.
+        
+        Sed iaculis, libero ac pulvinar suscipit, augue mauris consequat felis, a bibendum nibh metus vel urna. Suspendisse ornare ex nec enim ornare molestie. Sed lacinia arcu consequat, tempor ligula sit amet, sagittis enim. Sed facilisis, mauris ac tempor convallis, neque sem maximus est, in lacinia risus tellus sed est. Sed sit amet finibus mauris, ut mattis dolor. Nunc efficitur cursus ante volutpat finibus. Ut lectus arcu, sollicitudin vel ligula sed, commodo iaculis lectus. Morbi faucibus mollis purus quis malesuada. Fusce pretium pretium sollicitudin.
+        
+        Nullam quis egestas diam. Quisque commodo nisi at risus ultricies, at pellentesque tortor cursus. Vivamus condimentum odio eu pharetra sodales. Proin cursus gravida tincidunt. Quisque pharetra nisl id sem efficitur, vitae tincidunt mauris fringilla. Vivamus nec ligula non sapien aliquet tincidunt ac at purus. Cras interdum luctus nisi ac tempus. Donec accumsan volutpat dui at sodales. Phasellus nisi ipsum, malesuada ut tincidunt non, scelerisque et lacus.</p>
+    
+    <div id="popup" class="popup">
+        <div class="popupHeader">
+            <p>Header</p>
+        </div>
+        <div class="popupContent">
+            <p>This is the popup with some content in it.</p>
+        </div>
+        <button class="closeButton" onclick="hideDisplay()">Close</button>
+    </div>
+</div>
+
+</body>
+</html>
