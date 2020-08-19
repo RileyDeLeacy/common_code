@@ -34,20 +34,14 @@ class azureStorageManager{
      * @param String $blobName Blobs new name prefixes with the file path e.g. images/test_image.png
      * @return Boolean true if the upload was successful, false otherise
      */
-    public function uploadLocalBlob($filetoUpload, $blobName, $local) {
+    public function uploadLocalBlob($filetoUpload, $blobName) {
         $destinationURL = "https://$this->accountname.blob.core.windows.net/$this->container/$blobName";
         $currentDate = gmdate("D, d M Y H:i:s T", time());
-        if($local){
-            $handle = fopen($filetoUpload, "r");
-            $fileLen = filesize($filetoUpload);
-            $contentType = mime_content_type($filetoUpload);
-        }else{
-            $fileContents = file_get_contents($filetoUpload);
-            $handle = tmpfile();
-            fwrite($handle,$fileContents);
-            $fileLen = fstat($handle)['size'];
-            $contentType = mime_content_type($handle);
-        }
+        $handle = fopen($filetoUpload, "r");
+        $fileLen = filesize($filetoUpload);
+        // $fileLen = fstat($handle)['size'];
+        $contentType = mime_content_type($filetoUpload);
+
         
         $headerResource = "x-ms-blob-cache-control:max-age=3600\nx-ms-blob-type:BlockBlob\nx-ms-date:$currentDate\nx-ms-version:2019-12-12";
         $urlResource = "/$this->accountname/$this->container/$blobName";
@@ -103,9 +97,9 @@ class azureStorageManager{
             echo 'Curl error: ' . curl_error($ch) . " On File: " . $blobName . "\n";
             return false;
         }else{
-            // echo 'Operation completed without any errors';
+            echo 'Operation completed without any errors';
         }
-        // echo $response;
+        echo $response;
         if (curl_errno($ch)) {
             $error_msg = curl_error($ch);
         }
@@ -207,6 +201,74 @@ class azureStorageManager{
         }
         return array_merge($responseArray,isset($array['Blobs']['Blob'])?$array['Blobs']['Blob']:Array());
         // return $responseArray;
+    }
+
+    public function getBlob($blobName){
+        $destinationURL = "https://$this->accountname.blob.core.windows.net/$this->container/$blobName";
+        $currentDate = gmdate("D, d M Y H:i:s T", time());
+        
+        $headerResource = "x-ms-blob-cache-control:max-age=3600\nx-ms-blob-type:BlockBlob\nx-ms-date:$currentDate\nx-ms-version:2019-12-12";
+        $urlResource = "/$this->accountname/$this->container/$blobName";
+
+        //need all of these headers even if they're null as specified in the documentation here:
+        //https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key
+
+        $arraysign = array();
+        $arraysign[] = 'GET';               /*HTTP Verb*/
+        $arraysign[] = '';                  /*Content-Encoding*/
+        $arraysign[] = '';                  /*Content-Language*/
+        $arraysign[] = '';            /*Content-Length (include value when zero)*/
+        $arraysign[] = '';                  /*Content-MD5*/
+        $arraysign[] = '';         /*Content-Type*/
+        $arraysign[] = '';                  /*Date*/
+        $arraysign[] = '';                  /*If-Modified-Since */
+        $arraysign[] = '';                  /*If-Match*/
+        $arraysign[] = '';                  /*If-None-Match*/
+        $arraysign[] = '';                  /*If-Unmodified-Since*/
+        $arraysign[] = '';                  /*Range*/
+        $arraysign[] = $headerResource;     /*CanonicalizedHeaders*/
+        $arraysign[] = $urlResource;        /*CanonicalizedResource*/
+
+        //we still need the new line character even if the header option is null
+        $str2sign = implode("\n", $arraysign);
+
+        //Hash-based Message Authentication Code (HMAC) constructed from the request and computed by using the
+        //SHA256 algorithm, and then encoded by using Base64 encoding
+        $sig = base64_encode(hash_hmac('sha256', urldecode(utf8_encode($str2sign)), base64_decode($this->key), true));
+        $authHeader = "SharedKey $this->accountname:$sig";
+
+        $headers = [
+            'Authorization: ' . $authHeader,
+            'x-ms-blob-cache-control: max-age=3600',
+            'x-ms-blob-type: BlockBlob',
+            'x-ms-date: ' . $currentDate,
+            'x-ms-version: 2019-12-12'
+        ];
+
+        $ch = curl_init($destinationURL);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($ch, CURLOPT_UPLOAD, true);
+        $response = curl_exec($ch);
+        if($response === false){
+            echo 'Curl error: ' . curl_error($ch) . " On File: " . $blobName . "\n";
+            return false;
+        }else{
+            echo 'Operation completed without any errors';
+        }
+        // echo $response;
+        if (curl_errno($ch)) {
+            $error_msg = curl_error($ch);
+        }
+        if (isset($error_msg)) {
+            echo 'Curl error: ' . $error_msg . " On File: " . $blobName . "\n";
+            return false;
+        }
+        curl_close($ch);
+        return $response;
     }
 
 }
