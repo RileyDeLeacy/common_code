@@ -34,7 +34,7 @@ class azureStorageManager{
      * @param String $blobName Blobs new name prefixes with the file path e.g. images/test_image.png
      * @return Boolean true if the upload was successful, false otherise
      */
-    public function uploadLocalBlob($filetoUpload, $blobName) {
+    public function uploadBlob($filetoUpload, $blobName) {
         $destinationURL = "https://$this->accountname.blob.core.windows.net/$this->container/$blobName";
         $currentDate = gmdate("D, d M Y H:i:s T", time());
         $handle = fopen($filetoUpload, "r");
