@@ -1,0 +1,3 @@
+azure_storage/azureStorageCredentials.php
+azure_storage/azureStorageTest.php
+tests/*
