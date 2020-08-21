@@ -202,7 +202,12 @@ class azureStorageManager{
         return array_merge($responseArray,isset($array['Blobs']['Blob'])?$array['Blobs']['Blob']:Array());
         // return $responseArray;
     }
-
+    /**
+     * returns a blob of the input name, headers[x-ms-error-code][0] will return BlobNotFound if the input blob does not exist
+     * @param String $blobname name of the blob to return
+     * @return Array[Array[Array[]]] A three dimensional array. Depth 1 [body,headers], body simply contains the file contents.
+     * headers => content-length,content-type,server,x-ms-request-id,x-ms-version,x-ms-error-code,date
+     */
     public function getBlob($blobName){
         $destinationURL = "https://$this->accountname.blob.core.windows.net/$this->container/$blobName";
         $currentDate = gmdate("D, d M Y H:i:s T", time());
@@ -250,8 +255,22 @@ class azureStorageManager{
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // curl_setopt($ch, CURLOPT_HEADER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($ch, CURLOPT_UPLOAD, true);
+        $headers = [];
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+            function($curl, $header) use (&$headers){
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) // ignore invalid headers
+                return $len;
+
+                $headers[strtolower(trim($header[0]))][] = trim($header[1]);
+
+                return $len;
+            }
+        );
         $response = curl_exec($ch);
         if($response === false){
             echo 'Curl error: ' . curl_error($ch) . " On File: " . $blobName . "\n";
@@ -268,9 +287,177 @@ class azureStorageManager{
             return false;
         }
         curl_close($ch);
-        return $response;
+        return Array("headers"=>$headers,"body"=>$response);
     }
+    /**
+     * mark input blob for deletion
+     * @param String $blobname name of blob to be deleted
+     * @return String/Boolean response if successful otherwise false if error. If blob does not exist [headers][x-ms-error-code][0]
+     * will equal BlobNotFound
+     */
+    public function deleteBlob($blobName){
+        $destinationURL = "https://$this->accountname.blob.core.windows.net/$this->container/$blobName";
+        $currentDate = gmdate("D, d M Y H:i:s T", time());
+        
+        $headerResource = "x-ms-blob-cache-control:max-age=3600\nx-ms-blob-type:BlockBlob\nx-ms-date:$currentDate\nx-ms-version:2019-12-12";
+        $urlResource = "/$this->accountname/$this->container/$blobName";
 
+        //need all of these headers even if they're null as specified in the documentation here:
+        //https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key
+
+        $arraysign = array();
+        $arraysign[] = 'DELETE';               /*HTTP Verb*/
+        $arraysign[] = '';                  /*Content-Encoding*/
+        $arraysign[] = '';                  /*Content-Language*/
+        $arraysign[] = '';            /*Content-Length (include value when zero)*/
+        $arraysign[] = '';                  /*Content-MD5*/
+        $arraysign[] = '';         /*Content-Type*/
+        $arraysign[] = '';                  /*Date*/
+        $arraysign[] = '';                  /*If-Modified-Since */
+        $arraysign[] = '';                  /*If-Match*/
+        $arraysign[] = '';                  /*If-None-Match*/
+        $arraysign[] = '';                  /*If-Unmodified-Since*/
+        $arraysign[] = '';                  /*Range*/
+        $arraysign[] = $headerResource;     /*CanonicalizedHeaders*/
+        $arraysign[] = $urlResource;        /*CanonicalizedResource*/
+
+        //we still need the new line character even if the header option is null
+        $str2sign = implode("\n", $arraysign);
+
+        //Hash-based Message Authentication Code (HMAC) constructed from the request and computed by using the
+        //SHA256 algorithm, and then encoded by using Base64 encoding
+        $sig = base64_encode(hash_hmac('sha256', urldecode(utf8_encode($str2sign)), base64_decode($this->key), true));
+        $authHeader = "SharedKey $this->accountname:$sig";
+
+        $headers = [
+            'Authorization: ' . $authHeader,
+            'x-ms-blob-cache-control: max-age=3600',
+            'x-ms-blob-type: BlockBlob',
+            'x-ms-date: ' . $currentDate,
+            'x-ms-version: 2019-12-12'
+        ];
+
+        $ch = curl_init($destinationURL);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_UPLOAD, true);
+        $headers = [];
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+            function($curl, $header) use (&$headers){
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) // ignore invalid headers
+                return $len;
+
+                $headers[strtolower(trim($header[0]))][] = trim($header[1]);
+
+                return $len;
+            }
+        );
+        $response = curl_exec($ch);
+        if($response === false){
+            echo 'Curl error: ' . curl_error($ch) . " On File: " . $blobName . "\n";
+            return false;
+        }else{
+            echo 'Operation completed without any errors';
+        }
+        // echo $response;
+        if (curl_errno($ch)) {
+            $error_msg = curl_error($ch);
+        }
+        if (isset($error_msg)) {
+            echo 'Curl error: ' . $error_msg . " On File: " . $blobName . "\n";
+            return false;
+        }
+        curl_close($ch);
+        return Array("headers"=>$headers,"body"=>$response);
+    }
+    /**
+     * creates a container with the input name
+     * @param String $containerName name of the new container
+     * @return String/Boolean response if successful otherwise false if error. If blob does not exist [headers][x-ms-error-code][0]
+     * will equal BlobNotFound
+     */
+    public function createContainer($containerName) {
+        $destinationURL = "https://$this->accountname.blob.core.windows.net/$containerName?restype=container";
+        $currentDate = gmdate("D, d M Y H:i:s T", time());
+        $version = "2019-12-12";
+        $headerResource = "x-ms-date:$currentDate\nx-ms-version:$version";
+        $urlResource = "/$this->accountname/$containerName\nrestype:container";
+    
+        //need all of these headers even if they're null as specified in the documentation here:
+        //https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key
+    
+        $arraysign = array();
+        $arraysign[] = 'PUT';               /*HTTP Verb*/  
+        $arraysign[] = '';                  /*Content-Encoding*/  
+        $arraysign[] = '';                  /*Content-Language*/  
+        $arraysign[] = '';            /*Content-Length (include value when zero)*/  
+        $arraysign[] = '';                  /*Content-MD5*/  
+        $arraysign[] = '';         /*Content-Type*/  
+        $arraysign[] = '';                  /*Date*/  
+        $arraysign[] = '';                  /*If-Modified-Since */  
+        $arraysign[] = '';                  /*If-Match*/  
+        $arraysign[] = '';                  /*If-None-Match*/  
+        $arraysign[] = '';                  /*If-Unmodified-Since*/  
+        $arraysign[] = '';                  /*Range*/  
+        $arraysign[] = $headerResource;     /*CanonicalizedHeaders*/
+        $arraysign[] = $urlResource;        /*CanonicalizedResource*/
+        
+        //we still need the new line character even if the header option is null
+        $str2sign = implode("\n", $arraysign);
+    
+        //Hash-based Message Authentication Code (HMAC) constructed from the request and computed by using the
+        //SHA256 algorithm, and then encoded by using Base64 encoding
+        $sig = base64_encode(hash_hmac('sha256', urldecode(utf8_encode($str2sign)), base64_decode($this->key), true));
+        $authHeader = "SharedKey $this->accountname:$sig";
+    
+        $headers = [
+            'Authorization: ' . $authHeader,
+            'x-ms-date: ' . $currentDate,
+            'x-ms-version: ' . $version,
+            'Content-Length: 0'
+        ];
+    
+        $ch = curl_init($destinationURL);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_HEADER, true); 
+        $headers = [];
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+            function($curl, $header) use (&$headers){
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) // ignore invalid headers
+                return $len;
+
+                $headers[strtolower(trim($header[0]))][] = trim($header[1]);
+
+                return $len;
+            }
+        );
+        $content = curl_exec($ch);
+        if($content === false){
+            echo 'Curl error: ' . curl_error($ch)."\n";
+            return false;
+        }else{
+            // echo 'Operation completed without any errors\n';
+        }
+        $response = curl_getinfo($ch);
+        // echo "Content\n";
+        // echo($content);
+        // echo "Response";
+        // print_r($response);
+        curl_close($ch);
+        return Array("headers"=>$headers,"body"=>$response);
+    }
 }
 
 
