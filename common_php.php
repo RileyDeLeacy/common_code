@@ -67,4 +67,13 @@ function withinMargin($input1,$input2,$margin) {
     return $input1==null?$input2==null:$input1<=($input2*(1+$margin/100))&&$input1>=($input2*(1-$margin/100));
 }
 
+/**
+ * sanitizes and formats an input to safely use in database queries
+ * @param String value to sanitize
+ * @param mysqli a valid mysqli connection
+ * @return String sanitized input value with leading and following double quotations
+ **/
+function formatValue($value,$mysqli_connection){
+    return ($value==""||$value==null||!isset($value))?"NULL":"\"".$mysqli_connection->real_escape_string($value)."\"";
+}
 ?>
