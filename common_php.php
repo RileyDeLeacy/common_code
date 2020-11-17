@@ -76,4 +76,13 @@ function withinMargin($input1,$input2,$margin) {
 function formatValue($value,$mysqli_connection){
     return ($value==""||$value==null||!isset($value))?"NULL":"\"".$mysqli_connection->real_escape_string($value)."\"";
 }
+/**
+ * determines if a phrase occurs in a string, the search is case sensative
+ * @param String phrase to search for
+ * @param String string to be searched
+ * @return Boolean returns true if the input phrase occurs within the input string
+ **/
+function instr($phrase,$string){
+    return strpos($string,$phrase) !== false;
+}
 ?>
