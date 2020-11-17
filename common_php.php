@@ -85,4 +85,26 @@ function formatValue($value,$mysqli_connection){
 function instr($phrase,$string){
     return strpos($string,$phrase) !== false;
 }
+/**
+ * if json_last_error returns 4 for syntax error there maybe some hidden characters ruining your JSON format
+ * I copied this from kris's post here https://stackoverflow.com/questions/17219916/json-decode-returns-json-error-syntax-but-online-formatter-says-the-json-is-ok
+ * @param String json string
+ * @param String sanitised JSON string
+ **/
+function sanitiseJSON($data){
+    // This will remove unwanted characters.
+    // Check http://www.php.net/chr for details
+    for ($i = 0; $i <= 31; ++$i) { 
+        $data = str_replace(chr($i), "", $data); 
+    }
+    $data = str_replace(chr(127), "", $data);
+    
+    // This is the most common part
+    // Some file begins with 'efbbbf' to mark the beginning of the file. (binary level)
+    // here we detect it and we remove it, basically it's the first 3 characters 
+    if (0 === strpos(bin2hex($data), 'efbbbf')) {
+       $data = substr($data, 3);
+    }
+    return $data;
+}
 ?>
