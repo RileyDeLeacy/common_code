@@ -107,4 +107,17 @@ function sanitiseJSON($data){
     }
     return $data;
 }
+/**
+ * builds an in($items[0],$items[1],....,$items[n]) string based on an input array for sql statements
+ * @param Array Array of elements to be used in sql in query
+ * @return String String of format ('$items[0]','$items[1]',....,'$items[n]') escaped with sample characters
+ */
+function sqlInBuilder($items){
+    $stringBuilder = "(";
+    for($i=0;$i<count($items);$i++){
+        $stringBuilder .= ($stringBuilder == "(" ? "'" . $items[$i] . "'" : ",'" . $items[$i] . "'");
+    }
+    $stringBuilder .= ")";
+    return $stringBuilder;
+}
 ?>
