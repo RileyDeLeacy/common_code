@@ -120,4 +120,50 @@ function sqlInBuilder($items){
     $stringBuilder .= ")";
     return $stringBuilder;
 }
+/**
+ * Class used to iterate over excel columns. Current limit extends to 676 columns.
+ */
+class alphaIterator{
+	function __construct(){
+		$this->characters = Array('A','B','C','D','E','F','G','H','I','J','K','L','M',
+		'N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+		$this->currentChar=null;
+        $this->charNum=-1;
+        $this->currentRow=1;
+	}
+    /**
+     * gets the next cell in the sequence and moves the internal column pointer over to the next column
+     * @return String next cell
+     */
+	function nextChar(){
+		if($this->charNum==-1) {
+			$this->charNum = 1;
+			$this->currentChar="".$this->characters[$this->charNum-1];
+		}else if($this->charNum%26==0 && $this->charNum>0) {
+			$this->currentChar="".$this->characters[floor($this->charNum/26)-1].$this->characters[$this->charNum++%26];
+		}else {
+			if(strlen($this->currentChar)<1) {
+				$this->currentChar="".$this->characters[$this->charNum++%26];
+			}else {
+				$this->currentChar = substr($this->currentChar,0,strlen($this->currentChar)-1).$this->characters[$this->charNum++%26];
+			}
+		}
+		return $this->currentChar.$this->currentRow;
+    }
+    /**
+     * Resets the internal column counter and increments the row counter
+     */
+    function nextRow(){
+        $this->currentRow++;
+        $this->currentChar=null;
+        $this->charNum=-1;
+    }
+    /**
+     * gets the current cell without incrementing the internal column counter
+     * @return String current cell
+     */
+    function currentChar(){
+        return $this->currentChar.$this->currentRow;
+    }
+}
 ?>
