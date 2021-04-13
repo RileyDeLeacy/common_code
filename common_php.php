@@ -121,6 +121,14 @@ function sqlInBuilder($items){
     return $stringBuilder;
 }
 /**
+ * splits by the newline, covers new lines across all OS
+ * @param String $string string to split
+ * @return Array array result of splitting by the newline characters
+ */
+function splitByNewLine($string){
+    return preg_split("/\\r\\n|\\r|\\n/", $string);
+}
+/**
  * Class used to iterate over excel columns. Current limit extends to 676 columns.
  */
 class alphaIterator{
