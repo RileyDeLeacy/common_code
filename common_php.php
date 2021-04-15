@@ -129,6 +129,21 @@ function splitByNewLine($string){
     return preg_split("/\\r\\n|\\r|\\n/", $string);
 }
 /**
+ * standard json_decode but will return false if the result is null
+ * or json_decode hits an error
+ * @param String $data input JSON string
+ * @param Boolean $assoc return associative array, if false returns stdclass instance
+ * @return Array||Object returns json decoded array/object depending on $assoc or false if an error occured
+ */
+function json_decode_improved($data,$assoc = false){
+    $returnData = json_decode($data);
+    if($returnData !== null && json_last_error() === JSON_ERROR_NONE) {
+        return $data;
+    }else{
+        return false;
+    }
+}
+/**
  * Class used to iterate over excel columns. Current limit extends to 676 columns.
  */
 class alphaIterator{
