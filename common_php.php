@@ -188,5 +188,14 @@ class alphaIterator{
     function currentChar(){
         return $this->currentChar.$this->currentRow;
     }
+    /**
+     * generates a random date within the input bounds
+     * @param date $min date lower bound formatted as Y-m-d H:i:s (2021-07-05 15:53:14)
+     * @param date $max date upper bound formatted as Y-m-d H:i:s (2021-07-05 15:53:14)
+     * @return date returns a random date within the upper and lower bounds inclusive formatted as Y-m-d H:i:s (2021-07-05 15:53:14)
+     */
+    function randomDate($min,$max){
+        return date('Y-m-d H:i:s',rand(strtotime($min),strtotime($max)));
+    }
 }
 ?>
